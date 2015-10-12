@@ -1,0 +1,260 @@
+---
+
+---
+
+
+```{r,cache=TRUE,echo=FALSE, results='hide'}
+library(reshape2)
+library(ggplot2)
+library(MASS)
+library(tree)
+library(xtable)
+library(ISLR)
+library(gbm)
+library(randomForest)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(readr)
+library(e1071)
+```
+**Read the Data File**
+```{r,cache=TRUE,echo=TRUE}
+auto <- read.csv("C:/Users/Prasanta/Documents/CCS/AUTO_SAMPLE.csv", header = TRUE)
+dim(auto)
+```
+**Check Number of Defaulters and Non-Defaulters**
+```{r,cache=TRUE,echo=TRUE}
+table(auto$AT_DEF)
+```
+
+**Compare the default rates and the distributions of each variable from 1-25**
+```{r,cache=TRUE,echo=TRUE, fig.height=6, fig.width=10}
+auto.mod1 <- subset(auto[, c(1:25,415)])
+numeric_cols <- sapply(auto.mod1, is.numeric)
+auto.nm1 <- melt(auto.mod1[,numeric_cols], id="AT_DEF")
+plot <- ggplot(aes(x=value, group=AT_DEF, colour=factor(AT_DEF)), data=auto.nm1)
+plot + geom_density() +  facet_wrap(~variable, scales="free")
+```
+
+**Compare the default rates and the distributions of each variable from 26-50**
+```{r,cache=TRUE,echo=FALSE, fig.height=6, fig.width=10}
+auto.mod2 <- subset(auto[, c(26:50,415)])
+numeric_cols <- sapply(auto.mod2, is.numeric)
+auto.nm2 <- melt(auto.mod2[,numeric_cols], id="AT_DEF")
+plot <- ggplot(aes(x=value, group=AT_DEF, colour=factor(AT_DEF)), data=auto.nm2)
+plot + geom_density() + facet_wrap(~variable, scales="free")
+```
+
+**Compare the default rates and the distributions of each variable from 351-375**
+```{r,cache=TRUE,echo=FALSE, fig.height=6, fig.width=10}
+auto.mod6 <- subset(auto[, c(351:375,415)])
+numeric_cols <- sapply(auto.mod6, is.numeric)
+auto.nm6 <- melt(auto.mod6[,numeric_cols], id="AT_DEF")
+plot <- ggplot(aes(x=value, group=AT_DEF, colour=factor(AT_DEF)), data=auto.nm6)
+plot + geom_density() +  facet_wrap(~variable, scales="free")
+```
+
+**Compare the default rates and the distributions of each variable from 376-400**
+```{r,cache=TRUE,echo=FALSE, fig.height=6, fig.width=10}
+auto.mod6 <- subset(auto[, c(376:400,415)])
+numeric_cols <- sapply(auto.mod6, is.numeric)
+auto.nm6 <- melt(auto.mod6[,numeric_cols], id="AT_DEF")
+plot <- ggplot(aes(x=value, group=AT_DEF, colour=factor(AT_DEF)), data=auto.nm6)
+plot + geom_density() +
+  facet_wrap(~variable, scales="free")
+```
+
+**Compare the default rates and the distributions of each variable from 401-415**
+```{r,cache=TRUE,echo=FALSE, fig.height=6, fig.width=10}
+auto.mod6 <- subset(auto[, c(401:415)])
+numeric_cols <- sapply(auto.mod6, is.numeric)
+auto.nm6 <- melt(auto.mod6[,numeric_cols], id="AT_DEF")
+plot <- ggplot(aes(x=value, group=AT_DEF, colour=factor(AT_DEF)), data=auto.nm6)
+plot + geom_density() + facet_wrap(~variable, scales="free")
+```
+
+**Finding Unique Auto Loan Customers**
+```{r,cache=TRUE,echo=TRUE}
+length(unique(auto$ACCT_NBR))
+```
+
+**Removing Duplicated Rows**
+```{r,cache=TRUE,echo=TRUE}
+auto1 <- subset(auto[ , -c(94:379)])
+auto2 <- subset(auto1[ , -c(1,128)])
+auto3 <- auto2
+auto4 <- subset(auto3[ , -c(8,14,15,37,55,65)])
+auto5 <- subset(auto4[ , -7])
+dim(auto5)
+```
+
+**Checking Unique defaulters and non-defaulters**
+```{r,cache=TRUE,echo=TRUE}
+table(auto5$AT_DEF)
+```
+
+**Fitting Classification Trees**
+```{r,cache=TRUE,echo=TRUE}
+auto5$AT_DEF <- as.factor(auto5$AT_DEF)
+attach(auto5)
+tree.auto <- rpart(AT_DEF~.-ACCT_NBR, auto5)
+#summary(tree.auto)
+```
+**Classification Tree Plot**
+```{r,cache=TRUE,echo=TRUE, fig.height=4}
+fancyRpartPlot(tree.auto)
+```
+***Removing Spurious variable and Fitting Classification Trees again**
+```{r,cache=TRUE,echo=TRUE}
+table(auto5$AT_IRAC_RSca)
+tree.auto <- rpart(AT_DEF~.-ACCT_NBR-AT_IRAC_RSca, auto5)
+#summary(tree.auto)
+```
+**Classification Tree Plot**
+```{r,cache=TRUE,echo=TRUE, fig.height = 6}
+fancyRpartPlot(tree.auto)
+```
+
+***Removing Spurious variable and Fitting Classification Trees again**
+```{r,cache=TRUE,echo=TRUE}
+table(auto5$ATAR1)
+table(auto5$ATAR2)
+tree.auto <- rpart(AT_DEF~.-ACCT_NBR-AT_IRAC_RSca-ATAR1-ATAR2-ATAR3, auto5)
+```
+
+**Classification Tree Summary**
+```{r,cache=TRUE,echo=TRUE}
+summary(tree.auto)
+```
+
+**Classification Tree Plot**
+```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=12}
+fancyRpartPlot(tree.auto)
+```
+
+**Classification Tree using Training and Test Data**
+```{r,cache=TRUE,echo=TRUE}
+set.seed(1025)
+train <- sample(1:nrow(auto5), 23500)
+auto.test <- auto5[-train, ]
+tree.auto <- rpart(AT_DEF~.-ACCT_NBR-AT_IRAC_RSca-ATAR1-ATAR2-ATAR3, auto5, subset = train)
+tree.pred <- predict(tree.auto, auto.test, type="class")
+AT_DEF.test <- AT_DEF[-train]
+table(tree.pred, AT_DEF.test)
+```
+
+**Classification Tree Plot**
+```{r,echo=TRUE, fig.height=10, fig.width=10}
+fancyRpartPlot(tree.auto)
+```
+
+**Classification Using Random Forest**
+```{r,cache=TRUE,echo=TRUE}
+set.seed(2025)
+train <- sample(1:nrow(auto5), 23500)
+rf.auto <- randomForest(AT_DEF~.-ACCT_NBR-AT_IRAC_RSca-ATAR1-ATAR2-ATAR3,data=auto5,subset=train)
+rf.auto
+```
+
+**Variable Importance and Plot** 
+```{r,cache=TRUE,echo=TRUE,fig.height=10, fig.width=10}
+#importance(rf.auto)
+varImpPlot(rf.auto)
+```
+
+**Removing Variables with Lowest Mean Decrease Gini**
+```{r,cache=TRUE,echo=TRUE}
+auto6 <- subset(auto5[ ,-c(112,114,115,116)])
+auto7 <- subset(auto6[ , -c(2,3,12,13,14,36,37,47,52,54,57,58,59,60,66:74,76,77,79:82,85,88:93,95:100,104,111:115)])
+auto7$AT_DEF <- as.factor(auto7$AT_DEF)
+dim(auto7)
+```
+**Using RandomForest on the Modified Data**
+```{r,cache=TRUE,echo=TRUE}
+set.seed(123)
+train <- sample(1:nrow(auto7), 23500)
+AT_DEF.test <- AT_DEF[-train]
+rf.auto <- randomForest(AT_DEF~.-ACCT_NBR,data=auto7,subset=train,mtry=6,importance=TRUE)
+rf.auto
+```
+
+**Predicting the Model on the Test Data**
+```{r,echo=TRUE}
+yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
+table(yhat.rf, AT_DEF.test)
+```
+**Variable Importance and Plot** 
+```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
+#importance(rf.auto)
+varImpPlot(rf.auto)
+```
+**Repeating the Random Forest process by changing the tuning parameter mtry=10**
+```{r,cache=TRUE,echo=TRUE}
+set.seed(12345)
+train <- sample(1:nrow(auto7), 23500)
+AT_DEF.test <- AT_DEF[-train]
+rf.auto <- randomForest(AT_DEF~.-ACCT_NBR,data=auto7,subset=train,mtry=10,importance=TRUE)
+rf.auto
+```
+
+**Predicting the Model on the Test Data**
+```{r,echo=TRUE}
+yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
+table(yhat.rf, AT_DEF.test)
+```
+**Variable Importance and Plot** 
+```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
+#importance(rf.auto)
+varImpPlot(rf.auto)
+```
+
+**Repeating the Random Forest process by changing the tuning parameter mtry=15**
+```{r,cache=TRUE,echo=TRUE}
+set.seed(2345)
+train <- sample(1:nrow(auto7), 23500)
+AT_DEF.test <- AT_DEF[-train]
+rf.auto <- randomForest(AT_DEF~.-ACCT_NBR,data=auto7,subset=train,mtry=15,importance=TRUE)
+rf.auto
+```
+
+**Predicting the Model on the Test Data**
+```{r,echo=TRUE}
+yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
+table(yhat.rf, AT_DEF.test)
+```
+**Variable Importance and Plot** 
+```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
+#importance(rf.auto)
+varImpPlot(rf.auto)
+```
+
+**Using Boosting**
+```{r,cache=TRUE,echo=TRUE,fig.height=15, fig.width=10}
+set.seed(234)
+attach(auto7)
+train <- sample(1:nrow(auto7), 23500)
+AT_DEF.test <- AT_DEF[-train]
+boost.auto=gbm(AT_DEF~.-ACCT_NBR,data=auto7[train, ],distribution="bernoulli",n.trees=5000,interaction.depth=3)
+summary(boost.auto)
+```
+
+**Prediction result with Boosting**
+```{r,cache=TRUE,echo=TRUE}
+#yhat.boost <- predict(boost.auto,newdata=auto7[-train,],n.trees = 5000)
+#table(yhat.boost, AT_DEF.test)
+```
+
+**Modeling with SVM**
+```{r,cache=TRUE,echo=TRUE}
+train <- sample(1:nrow(auto7), 23500)
+AT_DEF.test <- AT_DEF[-train]
+auto8 <- auto7[train, ]
+inputData <- data.frame(auto8[, -c (1,68)], response = as.factor(auto8$AT_DEF))
+svmfit <- svm(response ~ ., data = inputData, kernel = "radial", cost = 2, scale = FALSE)
+print(svmfit)
+auto9 <- auto7[-train, ]
+testData <- data.frame(auto9[, -c (1,68)], response = as.factor(auto9$AT_DEF))
+table(testData$response, predict(svmfit, auto9))
+```
