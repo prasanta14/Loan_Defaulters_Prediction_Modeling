@@ -2,7 +2,7 @@
 
 ---
 
-
+**Load the packages**
 ```{r,cache=TRUE,echo=FALSE, results='hide'}
 library(reshape2)
 library(ggplot2)
@@ -19,11 +19,13 @@ library(RColorBrewer)
 library(readr)
 library(e1071)
 ```
+
 **Read the Data File**
 ```{r,cache=TRUE,echo=TRUE}
 auto <- read.csv("C:/Users/Prasanta/Documents/CCS/AUTO_SAMPLE.csv", header = TRUE)
 dim(auto)
 ```
+
 **Check Number of Defaulters and Non-Defaulters**
 ```{r,cache=TRUE,echo=TRUE}
 table(auto$AT_DEF)
@@ -102,16 +104,19 @@ attach(auto5)
 tree.auto <- rpart(AT_DEF~.-ACCT_NBR, auto5)
 #summary(tree.auto)
 ```
+
 **Classification Tree Plot**
 ```{r,cache=TRUE,echo=TRUE, fig.height=4}
 fancyRpartPlot(tree.auto)
 ```
-***Removing Spurious variable and Fitting Classification Trees again**
+
+**Removing Spurious variable and Fitting Classification Trees again**
 ```{r,cache=TRUE,echo=TRUE}
 table(auto5$AT_IRAC_RSca)
 tree.auto <- rpart(AT_DEF~.-ACCT_NBR-AT_IRAC_RSca, auto5)
 #summary(tree.auto)
 ```
+
 **Classification Tree Plot**
 ```{r,cache=TRUE,echo=TRUE, fig.height = 6}
 fancyRpartPlot(tree.auto)
@@ -171,6 +176,7 @@ auto7 <- subset(auto6[ , -c(2,3,12,13,14,36,37,47,52,54,57,58,59,60,66:74,76,77,
 auto7$AT_DEF <- as.factor(auto7$AT_DEF)
 dim(auto7)
 ```
+
 **Using RandomForest on the Modified Data**
 ```{r,cache=TRUE,echo=TRUE}
 set.seed(123)
@@ -185,11 +191,13 @@ rf.auto
 yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
 table(yhat.rf, AT_DEF.test)
 ```
+
 **Variable Importance and Plot** 
 ```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
 #importance(rf.auto)
 varImpPlot(rf.auto)
 ```
+
 **Repeating the Random Forest process by changing the tuning parameter mtry=10**
 ```{r,cache=TRUE,echo=TRUE}
 set.seed(12345)
@@ -204,6 +212,7 @@ rf.auto
 yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
 table(yhat.rf, AT_DEF.test)
 ```
+
 **Variable Importance and Plot** 
 ```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
 #importance(rf.auto)
@@ -224,6 +233,7 @@ rf.auto
 yhat.rf <- predict(rf.auto,newdata=auto7[-train,])
 table(yhat.rf, AT_DEF.test)
 ```
+
 **Variable Importance and Plot** 
 ```{r,cache=TRUE,echo=TRUE, fig.height=10, fig.width=10}
 #importance(rf.auto)
